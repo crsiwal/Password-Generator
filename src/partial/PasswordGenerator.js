@@ -16,6 +16,44 @@ const PasswordGenerator = () => {
   const [passwordStrength, setPasswordStrength] = useState("weak");
   const [copyBtnText, setCopyBtnText] = useState("Copy");
 
+  // Create a debounced version of the password generator
+  const debouncedSetLength = useCallback(debounce(setPasswordLength, 500), []);
+
+  const handleLengthChange = (e, value) => {
+    const length = value ? value : e.target.value;
+    const rangePercent = (length / maxInputLength) * 100;
+    let rangePercentColor = 0;
+    if (rangePercent > 90) {
+      rangePercentColor = 280;
+    } else if (rangePercent > 80) {
+      rangePercentColor = 250;
+    } else if (rangePercent > 70) {
+      rangePercentColor = 230;
+    } else if (rangePercent > 50) {
+      rangePercentColor = 170;
+    } else if (rangePercent > 30) {
+      rangePercentColor = 160;
+    } else {
+      rangePercentColor = 150;
+    }
+    setLength(length);
+    setRangePercent(rangePercent);
+    setRangePercentColor(rangePercentColor);
+    debouncedSetLength(length);
+  };
+
+  function debounce(func, delay) {
+    let timeoutId;
+    return function (...args) {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+      timeoutId = setTimeout(() => {
+        func(...args); // Pass the arguments to the original function
+      }, delay);
+    };
+  }
+
   const analyzePasswordStrength = password => {
     let strengthScore = 0;
 
@@ -50,12 +88,15 @@ const PasswordGenerator = () => {
     }
   };
 
-  const handleGeneratePassword = () => {
+  const handleGeneratePassword = (options = null) => {
     setIsGenerating(true);
     const maxLoop = Math.floor(Math.random() * (8 - 3 + 1)) + 3;
     let count = 0;
     const intervalId = setInterval(() => {
-      const options = { includeUppercase, includeLowercase, includeNumbers, includeSymbols };
+      if (!options) {
+        options = { includeUppercase, includeLowercase, includeNumbers, includeSymbols };
+      }
+
       const generatedPassword = generatePassword(passwordLength, options);
       setPassword(generatedPassword);
       if (count < maxLoop) {
@@ -69,50 +110,8 @@ const PasswordGenerator = () => {
   };
 
   useEffect(() => {
-    handleGeneratePassword();
-  }, [passwordLength, includeUppercase, includeLowercase, includeNumbers, includeSymbols]);
-
-  useEffect(() => {
     handleLengthChange(null, length);
-  }, []);
-
-  function debounce(func, delay) {
-    let timeoutId;
-    return function (...args) {
-      if (timeoutId) {
-        clearTimeout(timeoutId);
-      }
-      timeoutId = setTimeout(() => {
-        func(...args); // Pass the arguments to the original function
-      }, delay);
-    };
-  }
-
-  // Create a debounced version of the password generator
-  const debouncedSetLength = useCallback(debounce(setPasswordLength, 500), []);
-
-  const handleLengthChange = (e, value) => {
-    const length = value ? value : e.target.value;
-    const rangePercent = (length / maxInputLength) * 100;
-    let rangePercentColor = 0;
-    if (rangePercent > 90) {
-      rangePercentColor = 280;
-    } else if (rangePercent > 80) {
-      rangePercentColor = 250;
-    } else if (rangePercent > 70) {
-      rangePercentColor = 230;
-    } else if (rangePercent > 50) {
-      rangePercentColor = 170;
-    } else if (rangePercent > 30) {
-      rangePercentColor = 160;
-    } else {
-      rangePercentColor = 150;
-    }
-    setLength(length);
-    setRangePercent(rangePercent);
-    setRangePercentColor(rangePercentColor);
-    debouncedSetLength(length);
-  };
+  }, [length, handleLengthChange]);
 
   const handleCopyBtnClick = () => {
     navigator.clipboard.writeText(password);
@@ -120,6 +119,14 @@ const PasswordGenerator = () => {
     setTimeout(() => {
       setCopyBtnText("Copy");
     }, 1000);
+  };
+
+  useEffect(() => {
+    handleGeneratePassword({ includeUppercase, includeLowercase, includeNumbers, includeSymbols });
+  }, [passwordLength, includeUppercase, includeLowercase, includeNumbers, includeSymbols]);
+
+  const handleResetBtnClick = () => {
+    handleGeneratePassword({ includeUppercase, includeLowercase, includeNumbers, includeSymbols });
   };
 
   return (
@@ -130,7 +137,7 @@ const PasswordGenerator = () => {
             <input type="text" className="form-control border-0 fs-4 font-monospace ls-2" value={password} readOnly />
             <span className="input-group-text bg-transparent border-0">{passwordStrength}</span>
             <span className="input-group-text bg-transparent border-0">
-              <button title="Regenerate a new password instantly" className="btn p-0 btn-lg" onClick={handleGeneratePassword}>
+              <button title="Regenerate a new password instantly" className="btn p-0 btn-lg" onClick={handleResetBtnClick}>
                 <img className="img-fluid" src={resetPasswordImage} style={{ width: "36px", height: "36px" }} alt="Generate strong and secure passwords with our easy-to-use Password Generator" />
               </button>
             </span>

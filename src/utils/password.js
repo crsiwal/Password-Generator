@@ -24,7 +24,7 @@ export const generatePassword = (length, options) => {
   const hasSequentialCharacters = str => {
     return sequential.some(seq => str.includes(seq));
   };
-  console.log("test 1");
+
   while (password.length < length) {
     const randomIndex = Math.floor(Math.random() * charSet.length);
     const char = charSet[randomIndex];
