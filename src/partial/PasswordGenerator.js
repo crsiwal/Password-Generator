@@ -1,6 +1,8 @@
 import React, { useEffect, useState, useCallback } from "react";
 import resetPasswordImage from "../assets/icons/random-password-generate.svg";
 import { generatePassword } from "../utils/password";
+import { debounce } from "lodash";
+
 const PasswordGenerator = () => {
   const maxInputLength = 50;
   const [passwordLength, setPasswordLength] = useState(15);
@@ -19,40 +21,35 @@ const PasswordGenerator = () => {
   // Create a debounced version of the password generator
   const debouncedSetLength = useCallback(debounce(setPasswordLength, 500), []);
 
-  const handleLengthChange = (e, value) => {
-    const length = value ? value : e.target.value;
-    const rangePercent = (length / maxInputLength) * 100;
-    let rangePercentColor = 0;
-    if (rangePercent > 90) {
-      rangePercentColor = 280;
-    } else if (rangePercent > 80) {
-      rangePercentColor = 250;
-    } else if (rangePercent > 70) {
-      rangePercentColor = 230;
-    } else if (rangePercent > 50) {
-      rangePercentColor = 170;
-    } else if (rangePercent > 30) {
-      rangePercentColor = 160;
-    } else {
-      rangePercentColor = 150;
-    }
-    setLength(length);
-    setRangePercent(rangePercent);
-    setRangePercentColor(rangePercentColor);
-    debouncedSetLength(length);
-  };
-
-  function debounce(func, delay) {
-    let timeoutId;
-    return function (...args) {
-      if (timeoutId) {
-        clearTimeout(timeoutId);
+  const handleLengthChange = useCallback(
+    (e, value) => {
+      const length = value ? value : e.target.value;
+      const rangePercent = (length / maxInputLength) * 100;
+      let rangePercentColor = 0;
+      if (rangePercent > 90) {
+        rangePercentColor = 280;
+      } else if (rangePercent > 80) {
+        rangePercentColor = 250;
+      } else if (rangePercent > 70) {
+        rangePercentColor = 230;
+      } else if (rangePercent > 50) {
+        rangePercentColor = 170;
+      } else if (rangePercent > 30) {
+        rangePercentColor = 160;
+      } else {
+        rangePercentColor = 150;
       }
-      timeoutId = setTimeout(() => {
-        func(...args); // Pass the arguments to the original function
-      }, delay);
-    };
-  }
+      setLength(length);
+      setRangePercent(rangePercent);
+      setRangePercentColor(rangePercentColor);
+      debouncedSetLength(length);
+    },
+    [debouncedSetLength]
+  );
+
+  useEffect(() => {
+    handleLengthChange(null, length);
+  }, [length, handleLengthChange]);
 
   const analyzePasswordStrength = password => {
     let strengthScore = 0;
@@ -109,10 +106,6 @@ const PasswordGenerator = () => {
     }, 100);
   };
 
-  useEffect(() => {
-    handleLengthChange(null, length);
-  }, [length, handleLengthChange]);
-
   const handleCopyBtnClick = () => {
     navigator.clipboard.writeText(password);
     setCopyBtnText("Copied");
@@ -122,7 +115,11 @@ const PasswordGenerator = () => {
   };
 
   useEffect(() => {
-    handleGeneratePassword({ includeUppercase, includeLowercase, includeNumbers, includeSymbols });
+    if (!includeUppercase && !includeLowercase && !includeNumbers && !includeSymbols) {
+      setIncludeUppercase(true);
+    } else {
+      handleGeneratePassword({ includeUppercase, includeLowercase, includeNumbers, includeSymbols });
+    }
   }, [passwordLength, includeUppercase, includeLowercase, includeNumbers, includeSymbols]);
 
   const handleResetBtnClick = () => {
@@ -158,7 +155,7 @@ const PasswordGenerator = () => {
           </div>
         </div>
         <div className="col-12 col-md-8">
-          <input style={{ filter: `hue-rotate(${rangePercentColor}deg)` }} type="range" className="form-range custom-range-slider" id="customRange1" value={length} onChange={handleLengthChange} min={1} max={maxInputLength} />
+          <input style={{ filter: `hue-rotate(${rangePercentColor}deg)` }} type="range" className="form-range custom-range-slider" id="customRange1" value={length} onChange={e => handleLengthChange(null, parseInt(e.target.value))} min={1} max={maxInputLength} />
           <div id="h4-container">
             <div id="h4-subcontainer">
               <h4
